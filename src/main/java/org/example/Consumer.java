@@ -39,7 +39,6 @@ public class Consumer implements Runnable {
                         .forEach(linkLogger::info);
             }
         } catch (Exception e) {
-            logger.error("Error at thread" + Thread.currentThread().getId() + "." + e.getMessage());
             Thread.currentThread().interrupt();
         }
     }
