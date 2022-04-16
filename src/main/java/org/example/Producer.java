@@ -15,68 +15,70 @@ import java.net.http.HttpTimeoutException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import static org.example.Main.checkProducers;
+
 public class Producer implements Runnable {
-    private static final Logger logger = LogManager.getLogger("Producer");
+    private static final Logger logger = LogManager.getLogger("App");
     private static final Logger FailureLinkLogger = LogManager.getLogger("FailedLinks");
     private final ArrayBlockingQueue<String> inputQueue;
     private final ArrayBlockingQueue<Document> outputQueue;
-    private final Document outPoisonPill;
-    private final String inPoisonPill;
+    private final ServiceDiscovery serviceDiscovery = ServiceDiscovery.getInstance();
 
-    private final int poisonPillPerProducer;
-    private final int TIMEOUT_DURATION = 3;
-
-    public Producer(ArrayBlockingQueue<String> inputQueue, ArrayBlockingQueue<Document> outputQueue, Document outPoisonPill, String inPoisonPill, int poisonPillPerProducer) {
+    public Producer(ArrayBlockingQueue<String> inputQueue, ArrayBlockingQueue<Document> outputQueue) {
         this.inputQueue = inputQueue;
         this.outputQueue = outputQueue;
-        this.outPoisonPill = outPoisonPill;
-        this.inPoisonPill = inPoisonPill;
-        this.poisonPillPerProducer = poisonPillPerProducer;
     }
 
     public void run() {
         try {
             logger.info("Thread started.");
-            fetchMarkUp();
+            serviceDiscovery.addProducer();
+            while (true) {
+                String url = inputQueue.poll(Config.TIMEOUT, TimeUnit.SECONDS);
+                if (url == null) {
+                    if (inputQueue.isEmpty()) {
+                        serviceDiscovery.removeProducer();
+                        logger.info("Thread stopped.");
+                        Thread.currentThread().interrupt();
+                        return;
+                    }
+                } else {
+                    Document doc = produceDoc(url);
+                    if (doc != null) {
+                        while (!outputQueue.offer(doc, Config.TIMEOUT, TimeUnit.SECONDS)) {
+                            outputQueue.poll(Config.TIMEOUT, TimeUnit.SECONDS);
+                        }
+                    }
+                }
+            }
         } catch (InterruptedException e) {
-            logger.error("Producer with id " + Thread.currentThread().getId() + " throws :" + e.getMessage());
+            serviceDiscovery.removeProducer();
+            logger.error("Producer stopped. " + e);
+            checkProducers();
             Thread.currentThread().interrupt();
         }
     }
 
-    private void fetchMarkUp() throws InterruptedException {
-        String url = inputQueue.poll(TIMEOUT_DURATION, TimeUnit.SECONDS);
-        Connection.Response response;
-        while (!url.startsWith(inPoisonPill)) {
-            try {
-                response = getExecute(url);
-                if (response.statusCode() == 200) {
-                    while (!outputQueue.offer(response.parse(), TIMEOUT_DURATION, TimeUnit.SECONDS)) {
-                        outputQueue.poll(TIMEOUT_DURATION, TimeUnit.SECONDS);
-                    }
-                } else {
-                    FailureLinkLogger.warn("Url \"" + response.url() + "\" is Unreachable, Status code: " + response.statusCode());
-                }
-            } catch (HttpStatusException | HttpTimeoutException e) {
-                FailureLinkLogger.warn(e.getMessage());
-            } catch (SocketTimeoutException | UnknownHostException e) {
-                FailureLinkLogger.warn(e.getMessage() + " Url: " + url);
-            } catch (Exception e) {
-                logger.error(e.getMessage());
+    public Document produceDoc(String url) throws InterruptedException {
+        try {
+            Connection.Response response = fetchPage(url);
+            if (response.statusCode() == 200) {
+                return response.parse();
             }
-            url = inputQueue.poll(TIMEOUT_DURATION, TimeUnit.SECONDS);
+            return null;
+        } catch (HttpStatusException | HttpTimeoutException e) {
+            FailureLinkLogger.warn(e.getMessage());
+            return null;
+        } catch (SocketTimeoutException | UnknownHostException e) {
+            FailureLinkLogger.warn(e.getMessage() + " Url: " + url);
+            return null;
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            return null;
         }
-        logger.info("Thread stopped.");
-        poisonPillInserter();
     }
 
-    private void poisonPillInserter() {
-        for (int i = 0; i < poisonPillPerProducer; i++) {
-            outputQueue.offer(outPoisonPill);
-        }
-    }
-
-    private Connection.Response getExecute(String url) throws IOException {
+    public static Connection.Response fetchPage(String url) throws IOException {
         return Jsoup.connect(url)
                 .userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) Chrome/19.0.1042.0 Safari/535.21")
                 .timeout(5000)

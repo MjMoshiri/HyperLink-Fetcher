@@ -4,17 +4,7 @@
         <Console name="Console" target="SYSTEM_OUT">
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </Console>
-        <File name="Main" fileName="logs/main.log">
-            <PatternLayout>
-                <Pattern>%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Pattern>
-            </PatternLayout>
-        </File>
-        <File name="Producer" fileName="logs/pro.log">
-            <PatternLayout>
-                <Pattern>%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Pattern>
-            </PatternLayout>
-        </File>
-        <File name="Consumer" fileName="logs/con.log">
+        <File name="App" fileName="logs/app.log">
             <PatternLayout>
                 <Pattern>%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Pattern>
             </PatternLayout>
@@ -31,14 +21,8 @@
         </File>
     </Appenders>
     <Loggers>
-        <Logger name="Consumer" level="trace">
-            <AppenderRef ref="Consumer"/>
-        </Logger>
-        <Logger name="Producer" level="trace">
-            <AppenderRef ref="Producer"/>
-        </Logger>
-        <Logger name="Main" level="trace">
-            <AppenderRef ref="Main"/>
+        <Logger name="App" level="trace">
+            <AppenderRef ref="App"/>
         </Logger>
         <Logger name="Links" level="trace">
             <AppenderRef ref="Links"/>
