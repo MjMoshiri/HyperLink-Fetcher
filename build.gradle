@@ -1,14 +1,26 @@
 plugins {
-    id 'java'
+    id 'application'
+}
+apply plugin : "java"
+ext {
+    javaMainClass = "org.example.Main"
 }
 
+application {
+    mainClassName = javaMainClass
+}
 group 'org.example'
-version '1.0-SNAPSHOT'
+version '1'
 
 repositories {
     mavenCentral()
 }
 
+task runApp(dependsOn: ['compileJava', 'processResources', 'classes','run']){
+}
+processResources.mustRunAfter compileJava
+classes.mustRunAfter processResources
+run.mustRunAfter classes
 dependencies {
     implementation 'org.jsoup:jsoup:1.14.3'
     implementation 'org.apache.logging.log4j:log4j-api:2.17.2'
