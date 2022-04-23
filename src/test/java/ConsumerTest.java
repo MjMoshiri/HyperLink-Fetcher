@@ -1,7 +1,6 @@
 
 
 import org.example.Consumer;
-import org.example.ServiceDiscovery;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,15 +17,14 @@ import static org.junit.Assert.assertEquals;
 
 public class ConsumerTest {
     Consumer testConsumer;
-    ServiceDiscovery sd;
     ArrayBlockingQueue<Document> queue;
     Document doc;
 
     @BeforeEach
     public void setUp() {
-        queue = new ArrayBlockingQueue<>(5);
-        sd = ServiceDiscovery.getInstance();
-        testConsumer = new Consumer(queue);
+//        queue = new ArrayBlockingQueue<>(5);
+//        sd = ServiceDiscovery.getInstance();
+//        testConsumer = new Consumer(queue);
     }
 
     @Test
