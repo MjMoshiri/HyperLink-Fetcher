@@ -1,4 +1,7 @@
-# How to run:
+# Description
+HyperLink-Fetcher is an example project for addressing the producer-consumer problem. Producers gets a Link and extract the Markup Page out of it. and the consumer gets a markup page document and extract all the available HyperLinks in the page and store it in a file. Main queue works concurrently with many prodcuers and consumers at the same time.  
+
+## How to run:
 Navigate to the app directory and run the following command
 
 ./gradlew runApp
